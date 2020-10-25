@@ -1,34 +1,27 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html>
     <head>
+        <meta lang="en-US" />
         <meta charset="utf-8" />
         <title>Web Editor</title>
-        <style>
-            html,
-            body,
-            table,
-            iframe {
+        <style type="text/css">
+            body {
                 border: 0;
-                height: 100%;
+                height: 100vh;
                 margin: 0;
                 padding: 0;
                 width: 100%;
             }
-            td {
-                border: 2px solid black;
-                height: 50%;
-                padding: 25px 5px 5px 5px;
-                position: relative;
-                vertical-align: top;
-                width: 50%;
+            iframe,
+            .full-view {
+                height: 100%;
             }
             div.tag {
-                position: absolute;
-                right: 5px;
-                top: 5px;
+                display: flex;
+                justify-content: flex-end;
             }
             .editable-container {
-                height: 100%;
+                flex-grow: 1;
                 margin: 0 8px 8px 0px;
                 padding-bottom: 8px;
             }
@@ -36,39 +29,76 @@
                 height: 100%;
                 width: 100%;
             }
+            .section-row {
+                display: flex;
+                flex-direction: row;
+                width: 100%;
+                height: 100%;
+            }
+            .d-flex {
+                display: flex;
+            }
+            .flex-row {
+                flex-direction: row;
+            }
+            .flex-column {
+                flex-direction: column;
+            }
+            .col-6 {
+                width: 50%;
+            }
+            .col-12 {
+                width: 100%;
+            }
+            .section {
+                height: 100%;
+                height: 100%;
+                vertical-align: top;
+                width: 50%;
+            }
+            .section-row .section {
+                display: flex;
+                flex-direction: column;
+                padding: 4px;
+            }
+            #output {
+                border: 1px solid #c6c6c6;
+                margin-bottom: 10px;
+                margin-right: 2px;
+            }
         </style>
     </head>
     <body>
-        <table>
-            <tr>
-                <td>
+        <div class="full-view d-flex flex-column">
+            <div class="section-row">
+                <div class="section col-6">
                     <div class="tag">HTML (Body)</div>
                     <div class="editable-container">
                         <textarea id="html"></textarea>
                     </div>
-                </td>
-                <td>
+                </div>
+                <div class="section col-6">
                     <div class="tag">CSS</div>
                     <div class="editable-container">
                         <textarea id="css"></textarea>
                     </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
+                </div>
+            </div>
+            <div class="section-row">
+                <div class="section col-6">
                     <div class="tag">JavaScript</div>
                     <div class="editable-container">
                         <textarea id="js"></textarea>
                     </div>
-                </td>
-                <td>
+                </div>
+                <div class="section col-6">
                     <div class="tag">Output</div>
                     <iframe id="output"></iframe>
-                </td>
-            </tr>
-        </table>
+                </div>
+            </div>
+        </div>
 
-        <script>
+        <script type="text/javascript">
             (function() {
                 const pasteIntoInput = (el, text) => {
                     el.focus();
@@ -98,6 +128,18 @@
                         }, timeout);
                     };
                 };
+                const saveEdit = (edit) => {
+                    localStorage.setItem("edit", JSON.stringify(edit));
+                };
+                const getEdit = () => {
+                    let edit = localStorage.getItem("edit");
+                    if (edit === undefined || edit === null) {
+                        edit = {};
+                    } else {
+                        edit = JSON.parse(edit);
+                    }
+                    return edit;
+                };
                 window.onload = function() {
                     var html = document.querySelector("#html"),
                         css = document.querySelector("#css"),
@@ -115,6 +157,11 @@
                             document.body.innerHTML = html.value;
                             style.innerHTML = css.value;
                             script.innerHTML = js.value;
+                            saveEdit({
+                                html: html.value,
+                                css: css.value,
+                                js: js.value,
+                            });
                             document.body.appendChild(style);
                             document.body.appendChild(script);
                             working = false;
@@ -123,15 +170,37 @@
                     css.onkeyup = debounce(fill, 400);
                     js.onkeyup = debounce(fill, 400);
                     const handleTabPress = (e) => {
+                        let tab = "    ";
                         if (e.which == 9) {
                             e.preventDefault();
-                            pasteIntoInput(e.target, "    ");
+                            pasteIntoInput(e.target, tab);
                             return false;
                         }
                     };
                     html.addEventListener("keydown", handleTabPress);
                     css.addEventListener("keydown", handleTabPress);
                     js.addEventListener("keydown", handleTabPress);
+
+                    let init = () => {
+                        let edit = getEdit();
+                        let needsRender = false;
+                        if (edit.html) {
+                            html.value = edit.html;
+                            needsRender = true;
+                        }
+                        if (edit.js) {
+                            js.value = edit.js;
+                            needsRender = true;
+                        }
+                        if (edit.css) {
+                            css.value = edit.css;
+                            needsRender = true;
+                        }
+                        if (needsRender) {
+                            fill();
+                        }
+                    };
+                    init();
                 };
             })();
         </script>
