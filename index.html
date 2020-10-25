@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en-US">
+    <head>
+        <meta charset="utf-8" />
+        <title>Web Editor</title>
+        <style>
+            html,
+            body,
+            table,
+            iframe {
+                border: 0;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                width: 100%;
+            }
+            td {
+                border: 2px solid black;
+                height: 50%;
+                padding: 25px 5px 5px 5px;
+                position: relative;
+                vertical-align: top;
+                width: 50%;
+            }
+            div.tag {
+                position: absolute;
+                right: 5px;
+                top: 5px;
+            }
+            .editable-container {
+                height: 100%;
+                margin: 0 8px 8px 0px;
+                padding-bottom: 8px;
+            }
+            .editable-container textarea {
+                height: 100%;
+                width: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <table>
+            <tr>
+                <td>
+                    <div class="tag">HTML (Body)</div>
+                    <div class="editable-container">
+                        <textarea id="html"></textarea>
+                    </div>
+                </td>
+                <td>
+                    <div class="tag">CSS</div>
+                    <div class="editable-container">
+                        <textarea id="css"></textarea>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="tag">JavaScript</div>
+                    <div class="editable-container">
+                        <textarea id="js"></textarea>
+                    </div>
+                </td>
+                <td>
+                    <div class="tag">Output</div>
+                    <iframe id="output"></iframe>
+                </td>
+            </tr>
+        </table>
+
+        <script>
+            (function() {
+                const pasteIntoInput = (el, text) => {
+                    el.focus();
+                    var val = el.value;
+                    if (typeof el.selectionStart == "number") {
+                        var selStart = el.selectionStart;
+                        el.value =
+                            val.slice(0, selStart) +
+                            text +
+                            val.slice(el.selectionEnd);
+                        el.selectionEnd = el.selectionStart =
+                            selStart + text.length;
+                    } else if (typeof document.selection != "undefined") {
+                        var textRange = document.selection.createRange();
+                        textRange.text = text;
+                        textRange.collapse(false);
+                        textRange.select();
+                    }
+                };
+
+                const debounce = (fn, timeout) => {
+                    let interval;
+                    return function() {
+                        clearTimeout(interval);
+                        interval = setTimeout(function() {
+                            fn();
+                        }, timeout);
+                    };
+                };
+                window.onload = function() {
+                    var html = document.querySelector("#html"),
+                        css = document.querySelector("#css"),
+                        js = document.querySelector("#js"),
+                        output = document.querySelector("#output"),
+                        working = false,
+                        fill = function() {
+                            if (working) {
+                                return false;
+                            }
+                            working = true;
+                            var document = output.contentDocument,
+                                style = document.createElement("style"),
+                                script = document.createElement("script");
+                            document.body.innerHTML = html.value;
+                            style.innerHTML = css.value;
+                            script.innerHTML = js.value;
+                            document.body.appendChild(style);
+                            document.body.appendChild(script);
+                            working = false;
+                        };
+                    html.onkeyup = debounce(fill, 400);
+                    css.onkeyup = debounce(fill, 400);
+                    js.onkeyup = debounce(fill, 400);
+                    const handleTabPress = (e) => {
+                        if (e.which == 9) {
+                            e.preventDefault();
+                            pasteIntoInput(e.target, "    ");
+                            return false;
+                        }
+                    };
+                    html.addEventListener("keydown", handleTabPress);
+                    css.addEventListener("keydown", handleTabPress);
+                    js.addEventListener("keydown", handleTabPress);
+                };
+            })();
+        </script>
+    </body>
+</html>
