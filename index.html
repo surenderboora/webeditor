@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
-        <meta lang="en-US" />
         <meta charset="utf-8" />
         <title>Web Editor</title>
         <style type="text/css">
@@ -118,19 +117,26 @@
                         textRange.select();
                     }
                 };
-
-                const debounce = (fn, timeout) => {
-                    let interval;
+                function debounce(func, wait, immediate) {
+                    let timeout;
                     return function() {
-                        clearTimeout(interval);
-                        interval = setTimeout(function() {
-                            fn();
-                        }, timeout);
+                        let context = this,
+                            args = arguments;
+                        let later = function() {
+                            timeout = null;
+                            if (!immediate) func.apply(context, args);
+                        };
+                        let callNow = immediate && !timeout;
+                        clearTimeout(timeout);
+                        timeout = setTimeout(later, wait);
+                        if (callNow) func.apply(context, args);
                     };
-                };
+                }
+
                 const saveEdit = (edit) => {
                     localStorage.setItem("edit", JSON.stringify(edit));
                 };
+
                 const getEdit = () => {
                     let edit = localStorage.getItem("edit");
                     if (edit === undefined || edit === null) {
@@ -166,9 +172,10 @@
                             document.body.appendChild(script);
                             working = false;
                         };
-                    html.onkeyup = debounce(fill, 400);
-                    css.onkeyup = debounce(fill, 400);
-                    js.onkeyup = debounce(fill, 400);
+                    const wait = 500;
+                    html.onkeyup = debounce(fill, wait);
+                    css.onkeyup = debounce(fill, wait);
+                    js.onkeyup = debounce(fill, wait);
                     const handleTabPress = (e) => {
                         let tab = "    ";
                         if (e.which == 9) {
